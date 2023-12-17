@@ -16,10 +16,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import static com.c78.autocrafter.manager.AutoCrafterRuntimeManager.getMaterialsOf;
-import static com.c78.autocrafter.manager.AutoCrafterRuntimeManager.inventoryContainsResources;
-import static com.c78.autocrafter.manager.AutoCrafterRuntimeManager.removeResourcesFromContainer;
-import static com.c78.autocrafter.manager.AutoCrafterRuntimeManager.dropItem;
+import static com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager.getMaterialsOf;
+import static com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager.inventoryContainsResources;
+import static com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager.removeResourcesFromContainer;
+import static com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager.dropItem;
 
 public class AutoCrafterUnitRuntimeHandler implements Listener {
 
@@ -59,8 +59,14 @@ public class AutoCrafterUnitRuntimeHandler implements Listener {
         Inventory unitInventory = dropper.getInventory();
 
 
-
-
+        //TODO: onDrop: one Item gets removed, thats then mising for eval, and gets added back regardless of event.setItem(null)
+        //TODO: ---
+        //TODO: ---
+        //TODO: ---
+        //TODO: ---
+        //TODO: ---
+        //TODO: ---
+        //TODO: ---
 
         //TODO: DEBUG - Inventory
         {

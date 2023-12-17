@@ -8,8 +8,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AutoCrafterRuntimeManager {
-    private AutoCrafterRuntimeManager() {}
+public class AutoCrafterUnitRuntimeManager {
+    private AutoCrafterUnitRuntimeManager() {}
 
 
     /**
