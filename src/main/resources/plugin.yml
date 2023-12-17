@@ -1,0 +1,6 @@
+name: AutoCrafter
+version: '${project.version}'
+main: com.c78.autocrafter.AutoCrafter
+api-version: '1.20'
+
+
