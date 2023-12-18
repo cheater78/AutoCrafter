@@ -1,9 +1,7 @@
 package com.c78.autocrafter.events;
 
-import com.c78.autocrafter.data.block.AutoCrafterBlock;
 import com.c78.autocrafter.data.item.AutoCrafterItem;
-import com.c78.autocrafter.manager.AutoCrafterUnitManager;
-import org.bukkit.Location;
+import com.c78.autocrafter.manager.AutoCrafterUnitCreateManager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -15,12 +13,9 @@ public class AutoCrafterUnitCreateHandler implements Listener {
      * @param event the corresponding {@link BlockPlaceEvent}
      */
     @EventHandler
-    public void onBlockPlace(BlockPlaceEvent event){
-        if(!AutoCrafterItem.isACItem(event.getItemInHand())) return;
-        Location unitLocation = event.getBlock().getLocation();
-
-        AutoCrafterBlock.createAutoCrafterBlock(unitLocation, event.getPlayer().getFacing().getOppositeFace());
-        AutoCrafterUnitManager.create(unitLocation);
+    public void onBlockPlace(BlockPlaceEvent event) {
+        if (AutoCrafterItem.isACItem(event.getItemInHand()))
+            AutoCrafterUnitCreateManager.handleAutoCrafterUnitPlace(event);
     }
 
 }

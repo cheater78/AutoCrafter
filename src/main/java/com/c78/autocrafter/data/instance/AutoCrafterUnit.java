@@ -13,7 +13,7 @@ import java.io.ByteArrayOutputStream;
 
 public class AutoCrafterUnit {
 
-    private AutoCrafterUnitState state;
+    private final AutoCrafterUnitState state;
     private final Location location;
     private ItemStack targetItem;
 
@@ -23,26 +23,19 @@ public class AutoCrafterUnit {
      */
     public AutoCrafterUnit(Location location){
         this.location = location.toBlockLocation();
-        this.state = AutoCrafterUnitState.SETUP;
+        this.state = new AutoCrafterUnitState(); // SETUP as default
     }
 
     /**
      * Creates a new {@link AutoCrafterUnit} instance, taking all attributes for Restoring existing ones
-     * @param state the {@link AutoCrafterUnitState} the {@link AutoCrafterUnit} is currently in
+     * @param state the {@link String} of the {@link AutoCrafterUnitState} the {@link AutoCrafterUnit} is currently in
      * @param location the {@link Location} the {@link AutoCrafterUnit} is positioned at
      * @param itemStack the {@link ItemStack} the {@link AutoCrafterUnit} is supposed to craft
      */
-    public AutoCrafterUnit(AutoCrafterUnitState state, Location location, ItemStack itemStack){
-        this.state = state;
+    public AutoCrafterUnit(String state, Location location, ItemStack itemStack){
+        this.state = AutoCrafterUnitState.fromString(state);
         this.location = location.toBlockLocation();
         this.targetItem = itemStack;
-    }
-
-    /**
-     * @return the {@link AutoCrafterUnitState} the {@link AutoCrafterUnit} is currently in
-     */
-    public AutoCrafterUnitState getState() {
-        return state;
     }
 
     /**
@@ -60,14 +53,6 @@ public class AutoCrafterUnit {
     }
 
     /**
-     * Sets the {@link AutoCrafterUnitState} the {@link AutoCrafterUnit} should be in
-     * @param state the new {@link AutoCrafterUnitState}
-     */
-    public void setState(AutoCrafterUnitState state) {
-        this.state = state;
-    }
-
-    /**
      * Sets the {@link ItemStack} the {@link AutoCrafterUnit} is supposed to craft
      * @param targetItem the new {@link ItemStack}
      */
@@ -80,56 +65,76 @@ public class AutoCrafterUnit {
      * @return whether this {@link AutoCrafterUnit} is in {@link AutoCrafterUnitState} ACTIVE
      */
     public boolean isActive(){
-        return state.equals(AutoCrafterUnitState.ACTIVE);
+        return state.isActive();
     }
 
     /**
      * @return whether this {@link AutoCrafterUnit} is in {@link AutoCrafterUnitState} WAITING
      */
     public boolean isWaiting(){
-        return state.equals(AutoCrafterUnitState.WAITING);
+        return state.isWaiting();
     }
 
     /**
      * @return whether this {@link AutoCrafterUnit} is in {@link AutoCrafterUnitState} OFF
      */
     public boolean isOff(){
-        return state.equals(AutoCrafterUnitState.OFF);
+        return state.isOff();
     }
 
     /**
      * @return whether this {@link AutoCrafterUnit} is in {@link AutoCrafterUnitState} SETUP
      */
     public boolean isInSetup(){
-        return state.equals(AutoCrafterUnitState.SETUP);
+        return state.isInSetup();
     }
 
     /**
      * sets the {@link AutoCrafterUnitState} to ACTIVE
+     * @param business the required Actions left before returning to WAITING
      */
-    public void setActive(){
-        state = AutoCrafterUnitState.ACTIVE;
+    public void setActive(int business){
+        state.setActive(business);
+    }
+
+    /**
+     * @return the required Actions left before returning to WAITING
+     */
+    public int getActive(){
+        return state.getActive();
+    }
+
+    /**
+     * lowers required Actions left before returning to WAITING by 1
+     */
+    public void decreaseState(){
+        if(!state.isActive()) throw new IllegalStateException("State cannot be decreased if not Active!");
+        if(state.getActive()-1 > 0){
+            state.setActive(state.getActive()-1);
+        } else if(state.getActive()-1 == 0){
+            state.setWaiting();
+        }
     }
 
     /**
      * sets the {@link AutoCrafterUnitState} to WAITING
      */
     public void setWaiting(){
-        state = AutoCrafterUnitState.WAITING;
+        state.setWaiting();
     }
 
     /**
      * sets the {@link AutoCrafterUnitState} to OFF
      */
     public void setOff(){
-        state = AutoCrafterUnitState.OFF;
+        state.setOff();
     }
 
     /**
      * resets the {@link AutoCrafterUnit} to {@link AutoCrafterUnitState} SETUP
      */
     public void resetSetup(){
-        state = AutoCrafterUnitState.SETUP;
+        state.resetSetup();
         targetItem = null;
     }
 
@@ -170,40 +175,61 @@ public class AutoCrafterUnit {
                 '}';
     }
 
+    public String stateToString(){
+        return state.toString();
+    }
+
     /**
      * Describes the State a {@link AutoCrafterUnit} can be in
-     * SETUP if the {@link AutoCrafterUnit} is placed on a location, but the targetItem is still null
-     * WAITING if the {@link AutoCrafterUnit} is configured, but it's not powered or doesn't have all required ingredients to craft the targetItem
-     * ACTIVE if the {@link AutoCrafterUnit} is currently outputting the targetItem
-     * OFF if the {@link AutoCrafterUnit} was disabled by the User
+     * SETUP (-2) if the {@link AutoCrafterUnit} is placed on a location, but the targetItem is still null
+     * WAITING (0) if the {@link AutoCrafterUnit} is configured, but it's not powered or doesn't have all required ingredients to craft the targetItem
+     * ACTIVE (>0) if the {@link AutoCrafterUnit} is currently outputting the targetItem
+     * OFF (-1) if the {@link AutoCrafterUnit} was disabled by the User
      */
-    public enum AutoCrafterUnitState{
-        SETUP("setup"),
-        WAITING("waiting"),
-        ACTIVE("active"),
-        OFF("off")
-        ;
-        private final String state;
-        AutoCrafterUnitState(String state){
-            this.state = state;
+    private static class AutoCrafterUnitState {
+
+        private int state = -2;
+
+        public AutoCrafterUnitState() { /* defaults alr set */ }
+
+        public boolean isInSetup(){ return state == -2; }
+        public boolean isOff(){ return state == -1; }
+        public boolean isWaiting(){ return state == 0; }
+        public boolean isActive(){ return state > 0; }
+        public void resetSetup(){ this.state = -2; }
+        public void setOff(){ this.state = -1; }
+        public void setWaiting(){ this.state = 0; }
+
+        public void setActive(int amount){
+            if(amount < 1) throw new IllegalArgumentException("StateSemaphore is not active for < 1!");
+            this.state = amount;
+        }
+
+        public int getActive() {
+            if(state < 1) throw new IllegalArgumentException("StateSemaphore is not active for < 1! (currently is " + state + ")");
+            return state;
         }
 
         @Override
         public String toString(){
-            return state;
+            return String.valueOf(state);
         }
 
         public static AutoCrafterUnitState fromString(String state){
-            if(state.equals("setup"))
-                return SETUP;
-            else if (state.equals("active"))
-                return ACTIVE;
-            else if (state.equals("waiting"))
-                return WAITING;
-            else if (state.equals("off"))
-                return OFF;
-            else throw new IllegalArgumentException("Given state is not a valid AutoCrafterUnitState!");
+            AutoCrafterUnitState instance = new AutoCrafterUnitState();
+            Integer value = null;
+            try {
+                value = Integer.parseInt(state);
+            } catch (NumberFormatException e) { /* handled later */ }
+
+            if(value == null || value < -2)
+                throw new IllegalArgumentException("String representing the State must be Integer and >=-2");
+
+            instance.state = value;
+            return instance;
         }
+
+
     }
 
 
@@ -229,7 +255,7 @@ public class AutoCrafterUnit {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             try {
                 BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
-                dataOutput.writeObject(autoCrafterUnit.getState().toString());
+                dataOutput.writeObject(autoCrafterUnit.stateToString());
                 dataOutput.writeObject(autoCrafterUnit.getLocation());
                 dataOutput.writeObject(autoCrafterUnit.getTargetItem());
                 dataOutput.close();
@@ -248,8 +274,7 @@ public class AutoCrafterUnit {
                 Location location = (Location) dataInput.readObject();
                 ItemStack itemStack = (ItemStack) dataInput.readObject();
 
-                AutoCrafterUnit unit = new AutoCrafterUnit(AutoCrafterUnitState.fromString(state), location, itemStack);
-                return unit;
+                return new AutoCrafterUnit(state, location, itemStack);
             } catch (Exception ignored) {
                 throw new IllegalStateException("DeSerialization failed!");
             }

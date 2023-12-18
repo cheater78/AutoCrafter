@@ -1,6 +1,5 @@
 package com.c78.autocrafter.runtime;
 
-import com.c78.autocrafter.data.item.AutoCrafterItem;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.command.TabExecutor;
@@ -9,6 +8,7 @@ import org.bukkit.inventory.CraftingRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitScheduler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +26,10 @@ public class Runtime {
     public static void setup(Server serverInstance, JavaPlugin pluginInstance){
         server = serverInstance;
         plugin = pluginInstance;
+    }
+
+    public static BukkitScheduler getScheduler(){
+        return server.getScheduler();
     }
 
     public static void addEventListener(Listener listener){
