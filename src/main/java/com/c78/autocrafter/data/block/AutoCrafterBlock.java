@@ -59,7 +59,7 @@ public class AutoCrafterBlock {
         Block block = location.getBlock();
         location = location.toCenterLocation();
 
-        block.setType(Material.AIR);
+        block.breakNaturally(new ItemStack(Material.AIR));
         world.dropItemNaturally(location, itemStack);
     }
 

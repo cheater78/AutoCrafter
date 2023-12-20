@@ -50,7 +50,9 @@ public class Runtime {
         List<CraftingRecipe> craftingRecipes = new ArrayList<>();
         for(Recipe recipe : recipes)
             if(recipe instanceof CraftingRecipe craftingRecipe)
-                craftingRecipes.add(craftingRecipe);
+                if(recipe.getResult().isSimilar(itemStack)
+                        && recipe.getResult().getItemMeta().equals(itemStack.getItemMeta()))
+                    craftingRecipes.add(craftingRecipe);
         return craftingRecipes;
     }
 

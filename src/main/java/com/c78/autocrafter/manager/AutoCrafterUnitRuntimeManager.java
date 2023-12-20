@@ -2,7 +2,6 @@ package com.c78.autocrafter.manager;
 
 import com.c78.autocrafter.data.instance.AutoCrafterUnit;
 import com.c78.autocrafter.runtime.Runtime;
-import com.destroystokyo.paper.inventory.ItemStackRecipeChoice;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -16,6 +15,13 @@ import java.util.*;
 
 public class AutoCrafterUnitRuntimeManager {
     private AutoCrafterUnitRuntimeManager() {}
+
+    /*
+    Fireworks Meta -> Custom Recipes
+    Buckets -> return
+
+
+     */
 
     public static boolean isAutoCrafterUnitDropEvent(Block block){
         if(!(block.getState() instanceof Dropper dropper) || !AutoCrafterUnitManager.isAutoCrafterUnit(block)) return false;
@@ -44,8 +50,11 @@ public class AutoCrafterUnitRuntimeManager {
         Map<ItemStack, Integer> available = new HashMap<>();
         for(ItemStack itemStack : unitInventory.getContents()){
             if(itemStack == null || itemStack.getType().equals(Material.AIR)) continue;
-            available.computeIfPresent(itemStack, ((itemStack1, integer) -> integer + itemStack.getAmount() ));
-            available.putIfAbsent(itemStack, itemStack.getAmount());
+
+            ItemStack key = itemStack.clone();
+            key.setAmount(1);
+            available.computeIfPresent(key, ((itemStack1, integer) -> integer + itemStack.getAmount() ));
+            available.putIfAbsent(key, itemStack.getAmount());
         }
 
         //TODO: rework to test with availabe
@@ -56,11 +65,70 @@ public class AutoCrafterUnitRuntimeManager {
 
         //Check for all Recipes, whether the Materials are there
         for(CraftingRecipe recipe : Runtime.getCraftingRecipesOf(unit.getTargetItem())){
-            required = (recipe instanceof ShapedRecipe shapedRecipe) ? getMaterialsOf(shapedRecipe) :
-                    getMaterialsOf((ShapelessRecipe) recipe) ;
+            boolean recipeCraftable = true;
             result=recipe.getResult();
-            Runtime.warn(required.toString());
-            if(inventoryContainsResources(unitInventory, required)) break;
+
+            if(recipe instanceof ShapedRecipe shapedRecipe){
+                Map<Character, RecipeChoice> choiceMap = shapedRecipe.getChoiceMap();
+                String pattern = String.join("", shapedRecipe.getShape());
+
+                for(Character c : pattern.toCharArray()){
+                    RecipeChoice recipeChoice = choiceMap.get(c);
+                    boolean choiceFullfilled = false;
+
+                    if(recipeChoice == null)
+                        continue;
+
+
+                    for (ItemStack itemStack : available.keySet()){
+                        if(recipeChoice.test(itemStack)){
+                            if(
+                                    (required.containsKey(itemStack) && available.get(itemStack)-required.get(itemStack) > 0) ||
+                                            (!required.containsKey(itemStack) && available.get(itemStack) > 0)
+                            ){
+                                choiceFullfilled = true;
+                                required.computeIfPresent(itemStack, ((itemStack1, integer) -> integer + 1 ));
+                                required.putIfAbsent(itemStack, 1);
+                                break;
+                            }
+                        }
+                    }
+                    if(!choiceFullfilled) {
+                        recipeCraftable = false;
+                        break;
+                    }
+                }
+            } else if (recipe instanceof ShapelessRecipe shapelessRecipe){
+                List<RecipeChoice> choices = shapelessRecipe.getChoiceList();
+                for (RecipeChoice choice : choices){
+                    boolean choiceFullfilled = false;
+
+                    if(choice == null)
+                        continue;
+
+                    for (ItemStack itemStack : available.keySet()){
+                        if(choice.test(itemStack)){
+                            if(
+                                    (required.containsKey(itemStack) && available.get(itemStack)-required.get(itemStack) > 0) ||
+                                            (!required.containsKey(itemStack) && available.get(itemStack) > 0)
+                            ){
+                                choiceFullfilled = true;
+                                required.computeIfPresent(itemStack, ((itemStack1, integer) -> integer + 1 ));
+                                required.putIfAbsent(itemStack, 1);
+                                break;
+                            }
+                        }
+                    }
+                    if(!choiceFullfilled) {
+                        recipeCraftable = false;
+                        break;
+                    }
+                }
+            } else {
+                // Recipe slot is empty
+            }
+
+            if(recipeCraftable) break;
             else {
                 required.clear();
                 result = new ItemStack(Material.AIR);
@@ -71,6 +139,8 @@ public class AutoCrafterUnitRuntimeManager {
         if(required.isEmpty() || result.getType().equals(Material.AIR) ){
             return;
         }
+        Runtime.warn("Required: " + required.entrySet().toString());
+        Runtime.warn("Available: " + available.entrySet().toString());
 
         // Remove the Items that are necessary to craft the Item
         if(!removeResourcesFromContainer(dropper, required))
@@ -84,71 +154,6 @@ public class AutoCrafterUnitRuntimeManager {
         dropItem(dropper, result);
     }
 
-
-    /**
-     * Acquires all Materials needed for a {@link ShapedRecipe}
-     * @param recipe the {@link ShapedRecipe} for {@link ItemStack} acquisition
-     * @return a Map with {@link ItemStack}s and their needed {@link Integer} amount,
-     *         the amount is not stored inside the {@link ItemStack},
-     *         in case that it's larger that the corresponding maxStackSize
-     */
-    public static List<Map<ItemStack, Integer>> getMaterialsOf(@NotNull ShapedRecipe recipe){
-        List<Map<ItemStack, Integer>> requirements = new ArrayList<>();
-        String pattern = String.join("", recipe.getShape());
-        Map<Character, RecipeChoice> choiceMap = recipe.getChoiceMap();
-        for (Map.Entry<Character, RecipeChoice> entry : choiceMap.entrySet() ){
-            ItemStack itemStack = getItemStackFromRecipeChoice(entry.getValue());
-            if(itemStack == null) continue;
-
-            int amount = 0;
-            for (char c : pattern.toCharArray())
-                if(entry.getKey().equals(c))
-                    amount++;
-
-            int finalAmount = amount*itemStack.getAmount();
-            required.computeIfPresent(itemStack, ((iStack, integer) -> integer + finalAmount));
-            required.putIfAbsent(itemStack, finalAmount);
-        }
-        return required;
-    }
-
-    /**
-     * Acquires all Materials needed for a {@link ShapelessRecipe}
-     * @param recipe the {@link ShapelessRecipe} for {@link ItemStack} acquisition
-     * @return a Map with {@link ItemStack}s and their needed {@link Integer} amount,
-     *         the amount is not stored inside the {@link ItemStack},
-     *         in case that it's larger that the corresponding maxStackSize
-     */
-    public static Map<ItemStack, Integer> getMaterialsOf(@NotNull ShapelessRecipe recipe){
-        Map<ItemStack, Integer> required = new HashMap<>();
-        for (RecipeChoice recipeChoice : recipe.getChoiceList() ){
-            ItemStack itemStack = getItemStackFromRecipeChoice(recipeChoice);
-            if(itemStack == null) continue;
-
-            int finalAmount = itemStack.getAmount();
-            required.computeIfPresent(itemStack, ((iStack, integer) -> integer + finalAmount));
-            required.putIfAbsent(itemStack, finalAmount);
-        }
-        return required;
-    }
-
-    private static List<ItemStack> getItemStackFromRecipeChoice(RecipeChoice recipeChoice){
-        if(recipeChoice instanceof RecipeChoice.ExactChoice exactChoice) {
-            Runtime.warn(exactChoice.getChoices().toString());
-            return exactChoice.getChoices();
-        }
-        else if (recipeChoice instanceof RecipeChoice.MaterialChoice materialChoice) {
-            Runtime.warn(materialChoice.getChoices().toString());
-            List<ItemStack> items = new ArrayList<>();
-            for(Material material : materialChoice.getChoices()){
-                items.add(new ItemStack(material));
-            }
-            return items;
-        }
-        else if (recipeChoice instanceof ItemStackRecipeChoice choice){
-            throw new IllegalStateException("PaperOnly doodoo Recipe! dafuq u doin");
-        } else return null;
-    }
 
     /**
      * Determines, whether an Inventory contains a specified Amount of different Resources
@@ -201,6 +206,9 @@ public class AutoCrafterUnitRuntimeManager {
         Inventory inventory = container.getInventory();
         Map<ItemStack,Integer> validation = new HashMap<>(resources);
 
+        Runtime.warn("ToDelete: " + resources.entrySet().toString());
+        Runtime.warn("Validation: " + validation.entrySet().toString());
+
         // Iterate over every Resource that needs to be removed
         for(Map.Entry<ItemStack, Integer> entry : resources.entrySet()) {
             ItemStack requiredItemStack = entry.getKey();
@@ -209,7 +217,7 @@ public class AutoCrafterUnitRuntimeManager {
             // Iterate over every Inventory Slot to check if it matches the required Item in the current Iteration
             for (int i = 0; i < inventory.getSize(); i++){
                 ItemStack currentInventoryItemStack = inventory.getItem(i);
-                if(currentInventoryItemStack == null) continue;
+                if(currentInventoryItemStack == null || currentInventoryItemStack.getType().equals(Material.AIR)) continue;
 
                 if(requiredItemStack.isSimilar(currentInventoryItemStack)){
                     int currentAmount = currentInventoryItemStack.getAmount();
@@ -222,17 +230,27 @@ public class AutoCrafterUnitRuntimeManager {
                         currentAmount = 0;
                     }
                     ItemStack key = currentInventoryItemStack.clone();
-                    currentInventoryItemStack.setAmount(currentAmount);
-                    inventory.setItem(i, currentInventoryItemStack);
                     key.setAmount(1);
                     validation.put(key, requiredAmount);
+                    Runtime.warn(key.getType().name() + " " + requiredAmount);
+
+                    currentInventoryItemStack.setAmount(currentAmount);
+                    inventory.setItem(i, currentInventoryItemStack);
+
                 }
                 if(requiredAmount == 0)
                     break;
             }
         }
+
+        Runtime.warn(resources.entrySet().toString());
+        Runtime.warn(validation.entrySet().toString());
+
         for(Map.Entry<ItemStack, Integer> entry : validation.entrySet()){
+            if(entry.getKey().getType().equals(Material.AIR) || validation.get(entry.getKey()) == null)
+                continue;
             if(validation.get(entry.getKey()) != 0){
+                Runtime.warn(entry.getKey().getType().name());
                 container.update();
                 return false;
             }
