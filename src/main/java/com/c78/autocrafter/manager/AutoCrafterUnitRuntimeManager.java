@@ -23,6 +23,11 @@ public class AutoCrafterUnitRuntimeManager {
 
      */
 
+    /**
+     * Determines whether a {@link Block} is a {@link AutoCrafterUnit}
+     * @param block the {@link Block} in question
+     * @return true if the {@link Block} is a {@link AutoCrafterUnit}
+     */
     public static boolean isAutoCrafterUnitDropEvent(Block block){
         if(!(block.getState() instanceof Dropper dropper) || !AutoCrafterUnitManager.isAutoCrafterUnit(block)) return false;
         AutoCrafterUnit unit = AutoCrafterUnitManager.get(block);
@@ -36,7 +41,11 @@ public class AutoCrafterUnitRuntimeManager {
             return unit.isWaiting();
     }
 
-    public static void handleAutoCrafterUnitDrop(Location location){
+    /**
+     * Handles the AutoCrafting
+     * @param location the {@link Location} of the {@link AutoCrafterUnit}
+     */
+    public static boolean handleAutoCrafterUnitDrop(Location location){
         Block block = Bukkit.getServer().getWorld(location.getWorld().getUID()).getBlockAt(location);
         if(!(block.getState() instanceof Dropper dropper) || !AutoCrafterUnitManager.isAutoCrafterUnit(block))
             throw new IllegalArgumentException("BlockDispenseEvent must correspond to a AutoCrafterUnit," +
@@ -137,10 +146,8 @@ public class AutoCrafterUnitRuntimeManager {
 
         // ACU stays as WAITING if there is no CraftingRecipe and its resources available
         if(required.isEmpty() || result.getType().equals(Material.AIR) ){
-            return;
+            return false;
         }
-        Runtime.warn("Required: " + required.entrySet().toString());
-        Runtime.warn("Available: " + available.entrySet().toString());
 
         // Remove the Items that are necessary to craft the Item
         if(!removeResourcesFromContainer(dropper, required))
@@ -152,6 +159,7 @@ public class AutoCrafterUnitRuntimeManager {
 
         // Drop first Item
         dropItem(dropper, result);
+        return true;
     }
 
 

@@ -28,8 +28,8 @@ public class AutoCrafterItem {
         iMeta.displayName(Component.text("AutoCrafter"));
         iMeta.lore(
             List.of(
-                Component.text( NamedTextColor.DARK_GRAY + "automatically crafts a preset recipe"),
-                Component.text( NamedTextColor.DARK_PURPLE + "by c78")
+                Component.text( ChatColor.DARK_GRAY + "automatically crafts a preset recipe"),
+                Component.text( ChatColor.DARK_PURPLE + "by c78")
             )
         );
         PersistentDataContainer container = iMeta.getPersistentDataContainer();

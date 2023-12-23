@@ -1,16 +1,15 @@
 package com.c78.autocrafter.events;
 
+import com.c78.autocrafter.manager.AutoCrafterUnitManager;
 import com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager;
 import com.c78.autocrafter.runtime.Runtime;
 import io.papermc.paper.event.block.BlockFailedDispenseEvent;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Dropper;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockDispenseEvent;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
-import org.bukkit.inventory.ItemStack;
 
 public class AutoCrafterUnitRuntimeHandler implements Listener {
 
@@ -50,4 +49,16 @@ public class AutoCrafterUnitRuntimeHandler implements Listener {
             }
         }
     }
+
+    /**
+     * Called if a {@link Dropper} fails to Drop an Item, bc its {@link org.bukkit.inventory.Inventory} is empty
+     * @param event the corresponding {@link BlockFailedDispenseEvent}
+     */
+    @EventHandler
+    public void onFailedDispense(BlockFailedDispenseEvent event){
+        if(AutoCrafterUnitManager.isAutoCrafterUnit(event.getBlock())){
+            event.shouldPlayEffect(false);
+        }
+    }
+
 }

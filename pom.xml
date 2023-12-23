@@ -40,7 +40,7 @@
                         <configuration>
                             <finalName>AutoCrafter</finalName>
                             <createDependencyReducedPom>true</createDependencyReducedPom>
-                            <outputFile>C:\server\Autocrafter1_20_2\plugins\AutoCrafter.jar</outputFile>
+                            <outputFile>C:\server\Autocrafter-paper-1_20_2\plugins\AutoCrafter.jar</outputFile>
                         </configuration>
                     </execution>
                 </executions>
