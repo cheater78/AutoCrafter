@@ -265,4 +265,20 @@ public class AutoCrafterUnitRuntimeManager {
         }
         return true;
     }
+
+    /**
+     * Determines whether an {@link ItemStack} can't be added to an {@link Inventory}
+     * @param inventory the {@link Inventory}
+     * @param itemStack the {@link ItemStack} that shall fit
+     * @return true if the {@link ItemStack} doesn't fit in the {@link Inventory}
+     */
+    public static boolean isInventoryFull(Inventory inventory, ItemStack itemStack){
+        for(ItemStack iStack : inventory.getContents()){
+            if(iStack == null
+                    || iStack.getType().isAir()
+                    || (iStack.isSimilar(itemStack) && iStack.getAmount() < iStack.getMaxStackSize()))
+                return false;
+        }
+        return true;
+    }
 }

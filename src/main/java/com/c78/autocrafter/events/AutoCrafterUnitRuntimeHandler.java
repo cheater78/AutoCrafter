@@ -1,5 +1,6 @@
 package com.c78.autocrafter.events;
 
+import com.c78.autocrafter.data.instance.AutoCrafterUnit;
 import com.c78.autocrafter.manager.AutoCrafterUnitManager;
 import com.c78.autocrafter.manager.AutoCrafterUnitRuntimeManager;
 import com.c78.autocrafter.runtime.Runtime;
@@ -41,6 +42,9 @@ public class AutoCrafterUnitRuntimeHandler implements Listener {
             final Block block = dropper.getBlock();
             if(AutoCrafterUnitRuntimeManager.isAutoCrafterUnitDropEvent(block)){
                 event.setCancelled(true);
+                AutoCrafterUnit unit = AutoCrafterUnitManager.get(block);
+                if(AutoCrafterUnitRuntimeManager.isInventoryFull(event.getDestination(), unit.getTargetItem()))
+                    return;
                 Runtime.getScheduler().scheduleSyncDelayedTask(
                         Runtime.plugin,
                         () -> AutoCrafterUnitRuntimeManager.handleAutoCrafterUnitDrop(block.getLocation()),
